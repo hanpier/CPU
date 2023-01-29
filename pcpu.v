@@ -464,13 +464,13 @@ always @(select_y or gr[1] or gr[2] or gr[3] or gr[4] or gr[5] or gr[6]
     4'b0000: y = {3'b000, dw, 1'b0, zf, nf, cf, pc};
     4'b0001: y = gr[1];
     4'b0010: y = gr[2];
-    4'b0011: y = reg_B;
+    4'b0011: y = gr[3];
     4'b0100: y = gr[4];
     4'b0101: y = gr[5];
     4'b0110: y = gr[6];
     4'b0111: y = gr[7];
     4'b1000: y = reg_A;
-    4'b1001: y = gr[3];
+    4'b1001: y = reg_B;
     4'b1011: y = reg_C;
     4'b1100: y = reg_C1;
     4'b1101: y = smdr;
