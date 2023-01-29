@@ -85,8 +85,8 @@ reg [15:0] y;
 reg next_state;
 
 //parameters for mul operation
-reg [15:0] mul_store [0:7];
-reg [15:0] add_store [0:7];
+reg [31:0] mul_store [0:15];
+reg [31:0] add_store [0:15];
 reg negative_digital;
 
 
@@ -219,22 +219,22 @@ always @(posedge clock or negedge reset) begin
     reg_A <= 16'b0000000000000000;
     reg_B <= 16'b0000000000000000;
     smdr  <= 16'b0000000000000000;
-    mul_store[0] <= 16'b0000000000000000;
-    mul_store[1] <= 16'b0000000000000000;
-    mul_store[2] <= 16'b0000000000000000;
-    mul_store[3] <= 16'b0000000000000000;
-    mul_store[4] <= 16'b0000000000000000;
-    mul_store[5] <= 16'b0000000000000000;
-    mul_store[6] <= 16'b0000000000000000;
-    mul_store[7] <= 16'b0000000000000000;
-    add_store[0] <= 16'b0000000000000000;
-    add_store[1] <= 16'b0000000000000000;
-    add_store[2] <= 16'b0000000000000000;
-    add_store[3] <= 16'b0000000000000000;
-    add_store[4] <= 16'b0000000000000000;
-    add_store[5] <= 16'b0000000000000000;
-    add_store[6] <= 16'b0000000000000000;
-    add_store[7] <= 16'b0000000000000000;
+    mul_store[0] <= 32'd0;mul_store[8] <= 32'd0;
+    mul_store[1] <= 32'd0;mul_store[9] <= 32'd0;
+    mul_store[2] <= 32'd0;mul_store[10] <= 32'd0;
+    mul_store[3] <= 32'd0;mul_store[11] <= 32'd0;
+    mul_store[4] <= 32'd0;mul_store[12] <= 32'd0;
+    mul_store[5] <= 32'd0;mul_store[13] <= 32'd0;
+    mul_store[6] <= 32'd0;mul_store[14] <= 32'd0;
+    mul_store[7] <= 32'd0;mul_store[15] <= 32'd0;
+
+    add_store[1] <= 32'd0;add_store[8] <= 32'd0;
+    add_store[2] <= 32'd0;add_store[9] <= 32'd0;
+    add_store[3] <= 32'd0;add_store[10] <= 32'd0;
+    add_store[4] <= 32'd0;add_store[11] <= 32'd0;
+    add_store[5] <= 32'd0;add_store[12] <= 32'd0;
+    add_store[6] <= 32'd0;add_store[13] <= 32'd0;
+    add_store[7] <= 32'd0;add_store[14] <= 32'd0;
     negative_digital <= 1'b0;
   end 
     // if (regA_r1(id_ir[15:11]))  //RegA <- R1
@@ -412,25 +412,44 @@ always @(reg_A or reg_B or ex_ir[15:11])begin
         reg_B = ~reg_B + 1;
         negative_digital = negative_digital + 1;
       end
-      mul_store[0] = reg_B[0]? {8'b00000000, reg_A[7:0]     } : 16'b0000000000000000;
-      mul_store[1] = reg_B[1]? {7'b0000000, reg_A[7:0], 1'b0} : 16'b0000000000000000;
-      mul_store[2] = reg_B[2]? {6'b000000, reg_A[7:0], 2'b00} : 16'b0000000000000000;
-      mul_store[3] = reg_B[3]? {5'b00000, reg_A[7:0], 3'b000} : 16'b0000000000000000;
-      mul_store[4] = reg_B[4]? {4'b0000, reg_A[7:0], 4'b0000} : 16'b0000000000000000;
-      mul_store[5] = reg_B[5]? {3'b000, reg_A[7:0], 5'b00000} : 16'b0000000000000000;
-      mul_store[6] = reg_B[6]? {2'b00, reg_A[7:0], 6'b000000} : 16'b0000000000000000;
-      mul_store[7] = reg_B[7]? {1'b0, reg_A[7:0], 7'b0000000} : 16'b0000000000000000;
+      mul_store[0] = reg_B[0]? {16'b0, reg_A[15:0]} : 32'b0;
+      mul_store[1] = reg_B[1]? {15'b0, reg_A[15:0], 1'b0} : 32'b0;
+      mul_store[2] = reg_B[2]? {14'b0, reg_A[15:0], 2'b0} : 32'b0;
+      mul_store[3] = reg_B[3]? {13'b0, reg_A[15:0], 3'b0} : 32'b0;
+      mul_store[4] = reg_B[4]? {12'b0, reg_A[15:0], 4'b0} : 32'b0;
+      mul_store[5] = reg_B[5]? {11'b0, reg_A[15:0], 5'b0} : 32'b0;
+      mul_store[6] = reg_B[6]? {10'b0, reg_A[15:0], 6'b0} : 32'b0;
+      mul_store[7] = reg_B[7]? { 9'b0, reg_A[15:0], 7'b0} : 32'b0;
+      mul_store[8] = reg_B[8]? { 8'b0, reg_A[15:0], 8'b0} : 32'b0;
+      mul_store[9] = reg_B[9]? { 7'b0, reg_A[15:0], 9'b0} : 32'b0;
+      mul_store[10] = reg_B[10]?{ 6'b0, reg_A[15:0], 10'b0} : 32'b0;
+      mul_store[11] = reg_B[11]?{ 5'b0, reg_A[15:0], 11'b0} : 32'b0;
+      mul_store[12] = reg_B[12]?{ 4'b0, reg_A[15:0], 12'b0} : 32'b0;
+      mul_store[13] = reg_B[13]?{ 3'b0, reg_A[15:0], 13'b0} : 32'b0;
+      mul_store[14] = reg_B[14]?{ 2'b0, reg_A[15:0], 14'b0} : 32'b0;
+      mul_store[15] = reg_B[15]?{ 1'b0, reg_A[15:0], 15'b0} : 32'b0;
+      
       add_store[0] = mul_store[0] + mul_store[1];
       add_store[1] = mul_store[2] + mul_store[3];
       add_store[2] = mul_store[4] + mul_store[5];
       add_store[3] = mul_store[6] + mul_store[7];
+      add_store[4] = mul_store[8] + mul_store[9];
+      add_store[5] = mul_store[10] + mul_store[11];
+      add_store[6] = mul_store[12] + mul_store[13];
+      add_store[7] = mul_store[14] + mul_store[15];
 
-      add_store[4] = add_store[0] + add_store[1];
-      add_store[5] = add_store[2] + add_store[3];
+      add_store[8] = add_store[0] + add_store[1];
+      add_store[9] = add_store[2] + add_store[3];
+      add_store[10] = add_store[4] + add_store[5];
+      add_store[11] = add_store[6] + add_store[7];
 
-      add_store[6] = add_store[4] + add_store[5];
-      if(negative_digital == 0 || negative_digital == 2){cf_temp,ALUo[15:0]} = add_store[6];
-      else {cf_temp,ALUo[15:0]} = ~add_store[6] + 1;
+      add_store[12] = add_store[8] + add_store[9];
+      add_store[13] = add_store[10] + add_store[11];
+
+      add_store[14] = add_store[12] + add_store[13];
+
+      if(negative_digital == 0 || negative_digital == 2){cf_temp,ALUo[15:0]} = add_store[14];
+      else {cf_temp,ALUo[15:0]} = ~add_store[14] + 1;
     end
     `AND:   ALUo = reg_A & reg_B;
     `OR:    ALUo = reg_A | reg_B;
