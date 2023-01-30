@@ -390,6 +390,7 @@ function [15:0]mul_result;
   end
 endfunction
 // ALU module
+//always @(reg_A or reg_B or ex_ir[15:11])begin
 always @(reg_A or reg_B or ex_ir[15:11])begin
   case (ex_ir[15:11])
     `LOAD:  ALUo = reg_A + reg_B;
