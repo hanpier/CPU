@@ -91,6 +91,8 @@ reg [31:0] add_store [0:14];
 reg negative_digital;
 
 wire jump_flag;
+wire regA_r1, regA_r2, regB_r3, regB_val3, regB_val2_val3;
+wire regA_r1_idata, regA_r2_idata, regB_r3_idata;
 
 assign i_addr    = pc;
 assign d_we      = dw;  //store指令要用的
@@ -100,6 +102,44 @@ assign jump_flag = (((mem_ir[15:11] == `BZ) && (zf == 1'b1))||((mem_ir[15:11] ==
                 ((mem_ir[15:11] == `BN) && (nf == 1'b1))||((mem_ir[15:11] == `BNN) && (nf == 1'b0))||
                 (mem_ir[15:11] == `JUMP)||(mem_ir[15:11] == `JMPR)||
                 ((mem_ir[15:11] == `BC) && (cf == 1'b1))||((mem_ir[15:11] == `BNC) && (cf == 1'b0)));
+assign regA_r1 = ((id_ir[15:11] == `LDIH)||
+                    (id_ir[15:11] == `ADDI)||(id_ir[15:11] == `SUBI)||
+                    (id_ir[15:11] == `JMPR)||
+                    (id_ir[15:11] == `BZ)||(id_ir[15:11] == `BNZ)||
+                    (id_ir[15:11] == `BN)||(id_ir[15:11] == `BNN)||
+                    (id_ir[15:11] == `BC)||(id_ir[15:11] == `BNC));
+assign regA_r2 = ((id_ir[15:11] == `LOAD)||(id_ir[15:11] == `STORE)||
+                  (id_ir[15:11] == `ADD)||(id_ir[15:11] == `ADDC)||
+                  (id_ir[15:11] == `SUB)||(id_ir[15:11] == `SUBC)||
+                  (id_ir[15:11] == `CMP)||(id_ir[15:11] == `MUL)||(id_ir[15:11] == `MOVE)||
+                  (id_ir[15:11] == `AND)||(id_ir[15:11] == `OR)||(id_ir[15:11] == `XOR)||
+                  (id_ir[15:11] == `SLL)||(id_ir[15:11] == `SRL)||(id_ir[15:11] == `SLA)||(id_ir[15:11] == `SRA));
+assign regB_r3 = ((id_ir[15:11] == `ADD)||(id_ir[15:11] == `ADDC)||(id_ir[15:11] == `MUL)||
+                  (id_ir[15:11] == `SUB)||(id_ir[15:11] == `SUBC)||(id_ir[15:11] == `CMP)||
+                  (id_ir[15:11] == `AND)||(id_ir[15:11] == `OR)||(id_ir[15:11] == `XOR));
+assign regB_val3 = ((id_ir[15:11] == `LOAD)||(id_ir[15:11] == `STORE)||
+                    (id_ir[15:11] == `SLL)||(id_ir[15:11] == `SRL)||
+                    (id_ir[15:11] == `SLA)||(id_ir[15:11] == `SRA));
+assign regB_val2_val3 = ((id_ir[15:11] == `BZ)||(id_ir[15:11] == `BNZ)||
+                          (id_ir[15:11] == `ADDI)||(id_ir[15:11] == `SUBI)||
+                          (id_ir[15:11] == `JUMP)||(id_ir[15:11] == `JMPR)||
+                          (id_ir[15:11] == `BN)||(id_ir[15:11] == `BNN)||
+                          (id_ir[15:11] == `BC)||(id_ir[15:11] == `BNC));
+assign regA_r1_idata = ((i_datain[15:11] == `LDIH)||
+                        (i_datain[15:11] == `ADDI)||(i_datain[15:11] == `SUBI)||
+                        (i_datain[15:11] == `JMPR)||
+                        (i_datain[15:11] == `BZ)||(i_datain[15:11] == `BNZ)||
+                        (i_datain[15:11] == `BN)||(i_datain[15:11] == `BNN)||
+                        (i_datain[15:11] == `BC)||(i_datain[15:11] == `BNC));
+assign regA_r2_idata = ((i_datain[15:11] == `LOAD)||(i_datain[15:11] == `STORE)||
+                        (i_datain[15:11] == `ADD)||(i_datain[15:11] == `ADDC)||
+                        (i_datain[15:11] == `SUB)||(i_datain[15:11] == `SUBC)||
+                        (i_datain[15:11] == `CMP)||(i_datain[15:11] == `MUL)||(i_datain[15:11] == `MOVE)||
+                        (i_datain[15:11] == `AND)||(i_datain[15:11] == `OR)||(i_datain[15:11] == `XOR)||
+                        (i_datain[15:11] == `SLL)||(i_datain[15:11] == `SRL)||(i_datain[15:11] == `SLA)||(i_datain[15:11] == `SRA));
+assign regB_r3_idata = ((i_datain[15:11] == `ADD)||(i_datain[15:11] == `ADDC)||(i_datain[15:11] == `MUL)||
+                        (i_datain[15:11] == `SUB)||(i_datain[15:11] == `SUBC)||(i_datain[15:11] == `CMP)||
+                        (i_datain[15:11] == `AND)||(i_datain[15:11] == `OR)||(i_datain[15:11] == `XOR));
 //write_reg_enble
 function reg_enable;
   input [4:0] op;
@@ -111,62 +151,6 @@ function reg_enable;
                     (op == `SLL)|| (op == `SRL)|| (op == `SLA)|| (op == `SRA));
   end
 endfunction
-//RegA <- r1
-function regA_r1;
-  input [4:0] op;
-  begin
-    regA_r1 = ((op == `LDIH)||
-              (op == `ADDI)|| (op == `SUBI)||
-              (op == `JMPR)||
-              (op == `BZ)|| (op == `BNZ)||
-              (op == `BN)|| (op == `BNN)||
-              (op == `BC)|| (op == `BNC));
-  end
-endfunction
-//RegA <- r2
-function regA_r2;
-  input [4:0] op;
-  begin
-    regA_r2 = ((op == `LOAD)|| (op == `STORE)||
-              (op == `ADD)|| (op == `ADDC)||
-              (op == `SUB)|| (op == `SUBC)||
-              (op == `CMP)||(op == `MUL)||(op == `MOVE)||
-              (op == `AND)|| (op == `OR)|| (op == `XOR)||
-              (op == `SLL)|| (op == `SRL)|| (op == `SLA)|| (op == `SRA));
-  end
-endfunction
-//RegB<- r3
-function regB_r3;
-  input [4:0] op;
-  begin
-    regB_r3 = ((op == `ADD)||(op == `ADDC)|| (op == `MUL)||
-              (op == `SUB)||(op == `SUBC)|| (op == `CMP)||
-              (op == `AND)|| (op == `OR)|| (op == `XOR));
-  end
-endfunction
-//RegB <- val3
-function RegB_val3;
-  input [4:0] op;
-  begin
-    RegB_val3 = ((op == `LOAD) || (op == `STORE)||
-                (op == `SLL) || (op == `SRL) || 
-                (op == `SLA) || (op == `SRA));
-  end
-endfunction
-//RegB <- {val2,val3}
-function RegB_val2_val3;
-  input [4:0] op;
-  begin
-    RegB_val2_val3 = ((op == `BZ) || (op == `BNZ) || 
-                      (op == `ADDI) || (op == `SUBI)||
-                      (op == `JUMP)||(op == `JMPR)||
-                      (op == `BN)||(op == `BNN)||
-                      (op == `BC)||(op == `BNC));
-  end
-endfunction
-
-
-
 // CPU Control (FSM)
 always @(posedge clock or negedge reset) begin
   if (!reset) state <= `idle;
@@ -197,12 +181,12 @@ always @(posedge clock or negedge reset) begin
     end
     //Data stalling
     else if ((id_ir[15:11] == `LOAD)&&
-            (((i_datain[10:8] == id_ir[10:8]) && regA_r1(i_datain[15:11]))||
-            ((i_datain[6:4] == id_ir[10:8]) && regA_r2(i_datain[15:11]))||
-            ((i_datain[2:0] == id_ir[10:8]) && regB_r3(i_datain[15:11]))))
+            (((i_datain[10:8] == id_ir[10:8]) && regA_r1_idata)||
+            ((i_datain[6:4] == id_ir[10:8]) && regA_r2_idata)||
+            ((i_datain[2:0] == id_ir[10:8]) && regB_r3_idata)))
             begin
               pc <= pc;
-              //id_ir <= i_datain;
+             // id_ir <= i_datain;
               id_ir <= 16'b0000000000000000;
     end
     else begin
@@ -256,7 +240,7 @@ always @(posedge clock or negedge reset) begin
       else smdr  <= gr[id_ir[10:8]];
     end 
     //regA_r1
-    if(regA_r1(id_ir[15:11]))begin
+    if(regA_r1)begin
       if((id_ir[10:8]==ex_ir[10:8])&&reg_enable(ex_ir[15:11]))reg_A<=ALUo;
       else if(id_ir[10:8]==mem_ir[10:8]&&reg_enable(mem_ir[15:11]))begin
         if(mem_ir[15:11]==`LOAD)begin
@@ -268,7 +252,7 @@ always @(posedge clock or negedge reset) begin
       else reg_A <= gr[id_ir[10:8]];
     end
     //regA_r2
-    else if(regA_r2(id_ir[15:11]))begin
+    else if(regA_r2)begin
       if((id_ir[6:4]==ex_ir[10:8])&&reg_enable(ex_ir[15:11]))reg_A<=ALUo;
       else if(id_ir[6:4]==mem_ir[10:8]&&reg_enable(mem_ir[15:11]))begin
         if(mem_ir[15:11]==`LOAD)begin
@@ -282,7 +266,7 @@ always @(posedge clock or negedge reset) begin
     //JUMP reg_A <= 16'b0;  
     else if (id_ir[15:11] == `JUMP) reg_A <= 16'b0000000000000000;  
     //regB_r3
-    if(regB_r3(id_ir[15:11]))begin
+    if(regB_r3)begin
       if((id_ir[2:0]==ex_ir[10:8])&&reg_enable(ex_ir[15:11]))reg_B<=ALUo;
       
       else if(id_ir[2:0]==mem_ir[10:8]&&reg_enable(mem_ir[15:11]))begin
@@ -299,8 +283,8 @@ always @(posedge clock or negedge reset) begin
     //   else if((id_ir[6:4]==mem_ir[10:8])&&reg_enable(mem_ir[15:11]))reg_A<=reg_C;
     //   else if((id_ir[6:4]==wb_ir[10:8])&&reg_enable(wb_ir[15:11]))reg_A<=reg_C1;  
     // end
-    else if (RegB_val3(id_ir[15:11])) reg_B <= {12'b000000000000, id_ir[3:0]};
-    else if (RegB_val2_val3(id_ir[15:11])) reg_B <= {8'b00000000, id_ir[7:0]};
+    else if (regB_val3) reg_B <= {12'b000000000000, id_ir[3:0]};
+    else if (regB_val2_val3) reg_B <= {8'b00000000, id_ir[7:0]};
     else if (id_ir[15:11]==`LDIH) reg_B <= {id_ir[7:0], 8'b00000000};
   end
 end
@@ -352,7 +336,8 @@ always @(posedge clock or negedge reset) begin
   end 
   else if (state == `exec) begin
     wb_ir <= mem_ir;
-    reg_C1 <= (mem_ir[15:11]==`LOAD)? d_datain : reg_C;
+    if(mem_ir[15:11]==`LOAD)reg_C1 <= d_datain;
+    else reg_C1<= reg_C;
   end
 end
 
