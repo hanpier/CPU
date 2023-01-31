@@ -369,10 +369,10 @@ always @(posedge clock or negedge reset) begin
     gr[7] <= 16'b0000000000000000;
   end 
   else if (state == `exec) begin
-    if (wb_ir[10:8] != 3'b000) begin
+    //if (wb_ir[10:8] != 3'b000) begin
       if (reg_enable(wb_ir[15:11])) 
         gr[wb_ir[10:8]] <= reg_C1;
-    end
+    //end
   end
 end
 
