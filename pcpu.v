@@ -37,7 +37,7 @@
 
 //added operation
 `define MUL   5'b10011
-
+`define MOVE  5'b10100
 // FSM for CPU controler
 `define idle 1'b0
 `define exec 1'b1
@@ -78,6 +78,7 @@ reg [15:0] smdr, smdr1;
 reg zf, nf, cf, dw;
 reg state;
 reg cf_temp;
+reg [15:0] inst [2:0];
 
 // Definition of temporary variables
 reg [15:0] ALUo;
@@ -86,9 +87,8 @@ reg next_state;
 
 //parameters for mul operation
 reg [31:0] mul_store [0:15];
-reg [31:0] add_store [0:15];
+reg [31:0] add_store [0:14];
 reg negative_digital;
-
 
 wire jump_flag;
 
@@ -105,7 +105,7 @@ function reg_enable;
   input [4:0] op;
   begin
     reg_enable = ((op == `LOAD)|| (op == `LDIH)||(op == `MUL)||
-                    (op == `ADD)|| (op == `ADDI)|| (op == `ADDC)||
+                    (op == `ADD)|| (op == `ADDI)|| (op == `ADDC)||(op == `MOVE)||
                     (op == `SUB)|| (op == `SUBI)|| (op == `SUBC)||
                     (op == `AND)|| (op == `OR)|| (op == `XOR)||
                     (op == `SLL)|| (op == `SRL)|| (op == `SLA)|| (op == `SRA));
@@ -130,7 +130,7 @@ function regA_r2;
     regA_r2 = ((op == `LOAD)|| (op == `STORE)||
               (op == `ADD)|| (op == `ADDC)||
               (op == `SUB)|| (op == `SUBC)||
-              (op == `CMP)||(op == `MUL)||
+              (op == `CMP)||(op == `MUL)||(op == `MOVE)||
               (op == `AND)|| (op == `OR)|| (op == `XOR)||
               (op == `SLL)|| (op == `SRL)|| (op == `SLA)|| (op == `SRA));
   end
@@ -195,20 +195,20 @@ always @(posedge clock or negedge reset) begin
           pc <= reg_C[7:0];
           id_ir <= 16'b0000000000000000;
     end
-    //Data forwarding
+    //Data stalling
     else if ((id_ir[15:11] == `LOAD)&&
             (((i_datain[10:8] == id_ir[10:8]) && regA_r1(i_datain[15:11]))||
             ((i_datain[6:4] == id_ir[10:8]) && regA_r2(i_datain[15:11]))||
             ((i_datain[2:0] == id_ir[10:8]) && regB_r3(i_datain[15:11]))))
             begin
               pc <= pc;
+              //id_ir <= i_datain;
               id_ir <= 16'b0000000000000000;
     end
     else begin
       pc <= pc + 1;
       id_ir <= i_datain;
     end
-       
   end
 end
 
@@ -227,7 +227,7 @@ always @(posedge clock or negedge reset) begin
     mul_store[5] <= 32'd0;mul_store[13] <= 32'd0;
     mul_store[6] <= 32'd0;mul_store[14] <= 32'd0;
     mul_store[7] <= 32'd0;mul_store[15] <= 32'd0;
-
+    add_store[0] <= 32'd0;
     add_store[1] <= 32'd0;add_store[8] <= 32'd0;
     add_store[2] <= 32'd0;add_store[9] <= 32'd0;
     add_store[3] <= 32'd0;add_store[10] <= 32'd0;
@@ -237,16 +237,6 @@ always @(posedge clock or negedge reset) begin
     add_store[7] <= 32'd0;add_store[14] <= 32'd0;
     negative_digital <= 1'b0;
   end 
-    // if (regA_r1(id_ir[15:11]))  //RegA <- R1
-    //   reg_A <= gr[(id_ir[10:8])];
-    // else if (regA_r2(id_ir[15:11])) reg_A <= gr[(id_ir[6:4])];
-    // else if (id_ir[15:11] == `JUMP) reg_A <= 16'b0000_0000_0000_0000;     
-    // else reg_A <= reg_A;
-    // else if (regB_r3(id_ir[15:11])) reg_B <= gr[id_ir[2:0]];
-    //   else if (RegB_val3(id_ir[15:11])) reg_B <= {12'b000000000000, id_ir[3:0]};
-    //   else if (RegB_val2_val3(id_ir[15:11])) reg_B <= {8'b00000000, id_ir[7:0]};
-    //   else if (id_ir[15:11]==`LDIH) reg_B <= {id_ir[7:0], 8'b00000000};
-    //   else reg_B <= reg_B;
   else if (state == `exec) begin
     if(jump_flag)ex_ir<=16'b0000000000000000;
     else ex_ir <= id_ir;
@@ -304,6 +294,11 @@ always @(posedge clock or negedge reset) begin
       else if((id_ir[2:0])==wb_ir[10:8]&&reg_enable(wb_ir[15:11]))reg_B<=reg_C1;
       else reg_B <= gr[id_ir[2:0]];
     end
+    // else if(id_ir[15:11]==`LOAD)begin
+    //   if((id_ir[6:4]==ex_ir[10:8])&&reg_enable(ex_ir[15:11]))reg_A<=ALUo[15:0];
+    //   else if((id_ir[6:4]==mem_ir[10:8])&&reg_enable(mem_ir[15:11]))reg_A<=reg_C;
+    //   else if((id_ir[6:4]==wb_ir[10:8])&&reg_enable(wb_ir[15:11]))reg_A<=reg_C1;  
+    // end
     else if (RegB_val3(id_ir[15:11])) reg_B <= {12'b000000000000, id_ir[3:0]};
     else if (RegB_val2_val3(id_ir[15:11])) reg_B <= {8'b00000000, id_ir[7:0]};
     else if (id_ir[15:11]==`LDIH) reg_B <= {id_ir[7:0], 8'b00000000};
@@ -339,10 +334,9 @@ always @(posedge clock or negedge reset) begin
          (ex_ir[15:11] == `SUB)||(ex_ir[15:11] == `SUBI)||(ex_ir[15:11] == `SUBC)||(ex_ir[15:11]==`MUL)) cf <= cf_temp;
       else if((ex_ir[15:11] == `AND)||(ex_ir[15:11] == `OR)||(ex_ir[15:11] == `XOR))cf <= 0;
       else if((ex_ir[15:11] == `SLL)||(ex_ir[15:11] == `SRL)||(ex_ir[15:11] == `SLA)||(ex_ir[15:11] == `SRA))cf <= cf;
-      else cf <= cf;
     end
-
-    if (ex_ir[15:11] == `STORE) begin
+    //jump and store stall
+    if (!jump_flag && ex_ir[15:11] == `STORE) begin
       dw <= 1'b1;
       smdr1 <= smdr;
     end 
@@ -382,15 +376,7 @@ always @(posedge clock or negedge reset) begin
   end
 end
 
-function [15:0]mul_result;
-  input [15:0] reg_A;
-  input [15:0] reg_B;
-  begin
-    
-  end
-endfunction
 // ALU module
-//always @(reg_A or reg_B or ex_ir[15:11])begin
 always @(reg_A or reg_B or ex_ir[15:11])begin
   case (ex_ir[15:11])
     `LOAD:  ALUo = reg_A + reg_B;
@@ -404,6 +390,7 @@ always @(reg_A or reg_B or ex_ir[15:11])begin
     `SUBI: {cf_temp,ALUo[15:0]} = reg_A - reg_B;
     `SUBC: {cf_temp,ALUo[15:0]} = reg_A - reg_B - cf;
     `CMP:  {cf_temp,ALUo[15:0]} = reg_A - reg_B;
+    `MOVE: ALUo[15:0] = reg_A;
     `MUL: begin
       if(reg_A[15]==1)begin 
         reg_A = ~reg_A + 1;
@@ -462,7 +449,6 @@ always @(reg_A or reg_B or ex_ir[15:11])begin
       ALUo[14:0] = reg_A[14:0] << reg_B;
     end
     `SRA:   ALUo = ({{15{reg_A[15]}}, 1'b0} << (~reg_B)) | (reg_A >> reg_B);
-    `SRA:   ALUo = 0;
     `JUMP:  ALUo = reg_A + reg_B;
     `JUMP:  ALUo = reg_A + reg_B;
     `BZ:    ALUo = reg_A + reg_B;
